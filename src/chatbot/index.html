@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Auth Client</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            width: 400px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #bb86fc;
+            text-align: center;
+        }
+
+        .tab {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .tab button {
+            background: #2d2d2d;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            width: 48%;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .tab button.active {
+            background: #bb86fc;
+            color: #121212;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button.submit-btn {
+            background: #bb86fc;
+            color: #121212;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button.submit-btn:hover {
+            background: #9a67ea;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #message {
+            color: #ff5252;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .success {
+            color: #69f0ae !important;
+        }
+
+        #chat-box {
+            height: 250px;
+            background: #121212;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .chat-msg {
+            margin-bottom: 8px;
+        }
+
+        .chat-msg.user {
+            color: #80d8ff;
+        }
+
+        .chat-msg.ai {
+            color: #69f0ae;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" id="auth-container">
+        <h2>AI Backend Auth</h2>
+        <div class="tab">
+            <button id="login-tab" class="active" onclick="switchTab('login')">Login</button>
+            <button id="signup-tab" onclick="switchTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form">
+            <input type="text" id="login-username" placeholder="Username">
+            <input type="password" id="login-password" placeholder="Password">
+            <button class="submit-btn" onclick="handleLogin()">Login</button>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-form" class="hidden">
+            <input type="text" id="signup-username" placeholder="Username">
+            <input type="email" id="signup-mail" placeholder="Email">
+            <input type="password" id="signup-password" placeholder="Password">
+            <button class="submit-btn" onclick="handleSignup()">Create Account</button>
+            <button class="submit-btn" style="background: #333; color: #aaa;" onclick="showVerificationScreen(document.getElementById('signup-username').value.trim())">Verify Existing Account</button>
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <div class="container hidden" id="otp-container">
+        <h2>Verify Your Account</h2>
+        <p>Enter the 4-digit verification code sent to the email for <strong id="otp-username"></strong>.</p>
+        <input type="text" id="signup-otp" placeholder="4-digit OTP" inputmode="numeric" maxlength="4"
+            autocomplete="one-time-code">
+        <button class="submit-btn" onclick="handleVerifyOTP()">Verify Account</button>
+        <button class="submit-btn" style="background: #333; color: #aaa;" onclick="returnToAuth()">Back</button>
+        <div id="otp-message"></div>
+    </div>
+
+    <!-- Chat Interface (Hidden until logged in) -->
+    <div class="container hidden" id="chat-container">
+        <h2>LLM Chat Interface</h2>
+        <div id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="Type a message to bot...">
+        <button class="submit-btn" onclick="handleChat()">Send Message</button>
+        <button class="submit-btn" style="background: #333; color: #aaa; margin-top: 5px;"
+            onclick="handleLogout()">Logout</button>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let pendingVerificationUsername = "";
+
+        function switchTab(tab) {
+            document.getElementById('message').innerText = "";
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('signup-form').classList.add('hidden');
+                document.getElementById('login-tab').classList.add('active');
+                document.getElementById('signup-tab').classList.remove('active');
+            } else {
+                document.getElementById('signup-form').classList.remove('hidden');
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('signup-tab').classList.add('active');
+                document.getElementById('login-tab').classList.remove('active');
+            }
+        }
+
+        function showVerificationScreen(username) {
+            const otpMessage = document.getElementById('otp-message');
+            if (!username) {
+                document.getElementById('message').innerText =
+                    "Enter the account username before opening OTP verification.";
+                return;
+            }
+
+            pendingVerificationUsername = username;
+            document.getElementById('otp-username').innerText = username;
+            document.getElementById('signup-otp').value = "";
+            otpMessage.className = "";
+            otpMessage.innerText = "Enter the 4-digit OTP sent to your email.";
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('otp-container').classList.remove('hidden');
+        }
+
+        function returnToAuth() {
+            document.getElementById('otp-container').classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
+            switchTab('login');
+        }
+
+        async function handleSignup() {
+            const username = document.getElementById('signup-username').value;
+            const mail = document.getElementById('signup-mail').value;
+            const password = document.getElementById('signup-password').value;
+            const msg = document.getElementById('message');
+
+            try {
+                const res = await fetch(`${API_URL}/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, mail })
+                });
+                const data = await res.json();
+                if (data.signin === "success") {
+                    showVerificationScreen(username);
+
+                } else {
+                    msg.className = "";
+                    msg.innerText = data.error || data.detail || "Signup failed.";
+                }
+            } catch (err) {
+                msg.className = "";
+                msg.innerText = "Server error or connection failed.";
+            }
+        }
+
+        async function handleVerifyOTP() {
+            const username = pendingVerificationUsername;
+            const otp = document.getElementById('signup-otp').value.trim();
+            const msg = document.getElementById('otp-message');
+
+            if (!username) {
+                msg.className = "";
+                msg.innerText = "The account username is missing. Return and start verification again.";
+                return;
+            }
+            if (!/^\d{4}$/.test(otp)) {
+                msg.className = "";
+                msg.innerText = "Enter the 4-digit OTP.";
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, otp })
+                });
+                const data = await res.json();
+                if (res.ok && data.verification === "success") {
+                    document.getElementById('login-username').value = username;
+                    document.getElementById('signup-otp').value = "";
+                    pendingVerificationUsername = "";
+                    showChat();
+                } else {
+                    msg.className = "";
+                    msg.innerText = data.otp_status || data.error || "OTP verification failed.";
+                }
+            } catch (err) {
+                msg.className = "";
+                msg.innerText = "Server error or connection failed.";
+            }
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const msg = document.getElementById('message');
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.login === "success") {
+                    showChat();
+                } else if (data.error === "Please verify your account first.") {
+                    showVerificationScreen(username);
+                } else {
+                    msg.className = "";
+                    msg.innerText = data.error || "Login failed.";
+                }
+            } catch (err) {
+                msg.className = "";
+                msg.innerText = "Server error or connection failed.";
+            }
+        }
+
+        function showChat() {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('otp-container').classList.add('hidden');
+            document.getElementById('chat-container').classList.remove('hidden');
+        }
+
+        async function restoreSession() {
+            try {
+                const res = await fetch(`${API_URL}/me`, {
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    showChat();
+                } else if (res.status !== 401) {
+                    throw new Error(`Session check failed (${res.status}).`);
+                }
+            } catch (err) {
+                document.getElementById('message').innerText =
+                    "Could not verify your session. Check the server connection and try again.";
+            }
+        }
+
+        async function handleChat() {
+            const inputField = document.getElementById('chat-input');
+            const message = inputField.value;
+            const chatBox = document.getElementById('chat-box');
+
+            if (!message.trim()) return;
+
+            chatBox.innerHTML += `<div class="chat-msg user"><b>You:</b> ${message}</div>`;
+            inputField.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const res = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    chatBox.innerHTML += `<div class="chat-msg ai"><b>AI:</b> ${data.AIMessage}</div>`;
+                } else {
+                    chatBox.innerHTML += `<div class="chat-msg" style="color:#ff5252"><b>Error:</b> Unauthorized or session expired.</div>`;
+                }
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (err) {
+                chatBox.innerHTML += `<div class="chat-msg" style="color:#ff5252"><b>Error:</b> Failed to reach server.</div>`;
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                const res = await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (!res.ok) {
+                    throw new Error(`Logout failed (${res.status}).`);
+                }
+                document.getElementById('chat-container').classList.add('hidden');
+                document.getElementById('auth-container').classList.remove('hidden');
+                document.getElementById('chat-box').innerHTML = "";
+                document.getElementById('message').innerText = "";
+            } catch (err) {
+                document.getElementById('chat-box').innerText =
+                    "Could not log out. Check the server connection and try again.";
+            }
+        }
+
+        restoreSession();
+    </script>
+
+</body>
+
+</html>
