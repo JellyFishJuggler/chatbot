@@ -7,7 +7,7 @@ from chatbot.database import sessionMaker, engine
 import chatbot.model
 from sqlalchemy.orm import Session
 from chatbot.model import User  
-from chatbot.llm import chatResponse
+from chatbot.llm_model import _responseChatBot
 
 import jwt
 from datetime import datetime, timezone, timedelta
@@ -265,7 +265,7 @@ def verify_otp(credentials: VerifyOTP, response: Response, database: Session = D
 def chat(credentials: Chat, currentUser: str = Depends(get_current_user)):
 
     userInput = credentials.message
-    response = chatResponse(user_input=userInput)
+    response = _responseChatBot(_humanMessage=userInput)
 
     return {
         "username" : currentUser,
