@@ -4,169 +4,494 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Auth Client</title>
+    <title>AI Chat Workspace</title>
     <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+        :root {
+            --bg-main: #0f1115;
+            --bg-card: #171a21;
+            --bg-elevated: #21252f;
+            --bg-hover: #2a2f3c;
+            --border-subtle: #2c313d;
+            --accent: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --accent-soft: rgba(139, 92, 246, 0.14);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --success: #34d399;
+            --danger: #f87171;
         }
 
-        .container {
-            background: #1e1e1e;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            width: 400px;
-        }
-
-        h2 {
-            margin-top: 0;
-            color: #bb86fc;
-            text-align: center;
-        }
-
-        .tab {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .tab button {
-            background: #2d2d2d;
-            border: none;
-            color: #fff;
-            padding: 10px;
-            width: 48%;
-            cursor: pointer;
-            border-radius: 6px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        .tab button.active {
-            background: #bb86fc;
-            color: #121212;
-        }
-
-        input,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            background: #2d2d2d;
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 6px;
+        * {
             box-sizing: border-box;
         }
 
-        button.submit-btn {
-            background: #bb86fc;
-            color: #121212;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 10px;
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(circle at top, #1b1f2a 0%, var(--bg-main) 65%);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 16px;
         }
 
-        button.submit-btn:hover {
-            background: #9a67ea;
+        .container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+            width: 100%;
+            max-width: 400px;
+            transition: max-width 0.25s ease;
+        }
+
+        #chat-container {
+            max-width: 680px;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 84vh;
+            max-height: 760px;
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
-        #message {
-            color: #ff5252;
+        h2 {
+            margin: 0 0 6px;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
             text-align: center;
+        }
+
+        .subtitle {
+            margin: 0 0 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* Tabs */
+        .tab {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            background: var(--bg-main);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .tab button {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 9px;
+            cursor: pointer;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .tab button.active {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Inputs & Buttons */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 11px 13px;
+            margin: 7px 0;
+            background: var(--bg-main);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            border-radius: 9px;
             font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        button.submit-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 11px 16px;
+            width: 100%;
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 9px;
+            cursor: pointer;
             margin-top: 10px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button.submit-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        button.submit-btn:active {
+            transform: scale(0.99);
+        }
+
+        button.secondary-btn {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        button.secondary-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        #message,
+        #otp-message {
+            color: var(--danger);
+            text-align: center;
+            font-size: 13px;
+            margin-top: 12px;
+            min-height: 18px;
         }
 
         .success {
-            color: #69f0ae !important;
+            color: var(--success) !important;
         }
 
+        /* Chat Header */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .chat-header h2 {
+            margin: 0;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-badge {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            padding: 5px 10px;
+            border-radius: 999px;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: rgba(248, 113, 113, 0.08);
+        }
+
+        /* Chat Messages Area */
         #chat-box {
-            height: 250px;
-            background: #121212;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 10px;
+            flex: 1;
+            background: var(--bg-main);
+            padding: 20px;
             overflow-y: auto;
-            margin-bottom: 10px;
-            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #chat-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-box::-webkit-scrollbar-thumb {
+            background: var(--border-subtle);
+            border-radius: 3px;
+        }
+
+        .empty-state {
+            margin: auto;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            max-width: 300px;
+            line-height: 1.5;
         }
 
         .chat-msg {
-            margin-bottom: 8px;
+            max-width: 82%;
+            padding: 11px 15px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            animation: fadeIn 0.18s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .chat-msg.user {
-            color: #80d8ff;
+            align-self: flex-end;
+            background: var(--accent);
+            color: #fff;
+            border-bottom-right-radius: 4px;
         }
 
         .chat-msg.ai {
-            color: #69f0ae;
+            align-self: flex-start;
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-msg.error {
+            align-self: center;
+            background: rgba(248, 113, 113, 0.12);
+            color: var(--danger);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            font-size: 13px;
+        }
+
+        .typing {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Bottom Composer + Document Bar */
+        .chat-footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .upload-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--bg-main);
+            border: 1px dashed var(--border-subtle);
+            padding: 7px 12px;
+            border-radius: 10px;
+        }
+
+        .file-picker-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .file-picker-label:hover {
+            color: var(--text-primary);
+        }
+
+        #file-name-display {
+            font-size: 12px;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .upload-btn {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            padding: 5px 12px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .upload-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        #upload-message {
+            font-size: 12px;
+            color: var(--danger);
+            text-align: right;
+            min-height: 0;
+        }
+
+        #upload-message:empty {
+            display: none;
+        }
+
+        .composer-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .composer-row input[type="text"] {
+            margin: 0;
+            flex: 1;
+            padding: 12px 14px;
+        }
+
+        .send-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 9px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover {
+            background: var(--accent-hover);
         }
     </style>
 </head>
 
 <body>
 
+    <!-- Auth Container -->
     <div class="container" id="auth-container">
-        <h2>AI Backend Auth</h2>
+        <h2>RAG Assistant</h2>
+        <p class="subtitle">Sign in to chat with your private documents</p>
         <div class="tab">
             <button id="login-tab" class="active" onclick="switchTab('login')">Login</button>
             <button id="signup-tab" onclick="switchTab('signup')">Sign Up</button>
         </div>
 
-        <!-- Login Form -->
         <div id="login-form">
-            <input type="text" id="login-username" placeholder="Username">
-            <input type="password" id="login-password" placeholder="Password">
+            <input type="text" id="login-username" placeholder="Username" autocomplete="username">
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
             <button class="submit-btn" onclick="handleLogin()">Login</button>
         </div>
 
-        <!-- Signup Form -->
         <div id="signup-form" class="hidden">
             <input type="text" id="signup-username" placeholder="Username">
             <input type="email" id="signup-mail" placeholder="Email">
             <input type="password" id="signup-password" placeholder="Password">
             <button class="submit-btn" onclick="handleSignup()">Create Account</button>
-            <button class="submit-btn" style="background: #333; color: #aaa;" onclick="showVerificationScreen(document.getElementById('signup-username').value.trim())">Verify Existing Account</button>
+            <button class="submit-btn secondary-btn"
+                onclick="showVerificationScreen(document.getElementById('signup-username').value.trim())">Verify
+                Existing Account</button>
         </div>
         <div id="message"></div>
     </div>
 
+    <!-- OTP Container -->
     <div class="container hidden" id="otp-container">
         <h2>Verify Your Account</h2>
-        <p>Enter the 4-digit verification code sent to the email for <strong id="otp-username"></strong>.</p>
-        <input type="text" id="signup-otp" placeholder="4-digit OTP" inputmode="numeric" maxlength="4"
-            autocomplete="one-time-code">
+        <p class="subtitle">Enter the 4-digit code sent to the email for <strong id="otp-username"></strong>.</p>
+        <input type="text" id="signup-otp" placeholder="0000" inputmode="numeric" maxlength="4"
+            autocomplete="one-time-code" style="text-align: center; letter-spacing: 6px; font-size: 18px;">
         <button class="submit-btn" onclick="handleVerifyOTP()">Verify Account</button>
-        <button class="submit-btn" style="background: #333; color: #aaa;" onclick="returnToAuth()">Back</button>
+        <button class="submit-btn secondary-btn" onclick="returnToAuth()">Back</button>
         <div id="otp-message"></div>
     </div>
 
-    <!-- Chat Interface (Hidden until logged in) -->
+    <!-- Chat Interface -->
     <div class="container hidden" id="chat-container">
-        <h2>LLM Chat Interface</h2>
-        <div id="chat-box"></div>
-        <input type="text" id="chat-input" placeholder="Type a message to bot...">
-        <button class="submit-btn" onclick="handleChat()">Send Message</button>
-        <button class="submit-btn" style="background: #333; color: #aaa; margin-top: 5px;"
-            onclick="handleLogout()">Logout</button>
+        <div class="chat-header">
+            <div class="header-left">
+                <span class="status-dot"></span>
+                <h2>Knowledge Assistant</h2>
+            </div>
+            <div class="header-right">
+                <span class="user-badge" id="active-user-badge">Signed in</span>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <div id="chat-box">
+            <div class="empty-state" id="empty-state">
+                Upload a <b>.txt</b> or <b>.pdf</b> document below, then ask questions grounded in your files.
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <div class="upload-bar">
+                <label class="file-picker-label" for="upload-file">📎 Choose Doc</label>
+                <input type="file" id="upload-file" accept=".txt,.pdf" class="hidden" onchange="updateFileName()">
+                <span id="file-name-display">No file selected (.txt, .pdf)</span>
+                <button class="upload-btn" onclick="handleUpload()">Upload</button>
+            </div>
+            <div id="upload-message"></div>
+
+            <div class="composer-row">
+                <input type="text" id="chat-input" placeholder="Ask something about your documents..."
+                    onkeydown="if(event.key === 'Enter') handleChat()">
+                <button class="send-btn" onclick="handleChat()">Send</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -200,7 +525,7 @@
             document.getElementById('otp-username').innerText = username;
             document.getElementById('signup-otp').value = "";
             otpMessage.className = "";
-            otpMessage.innerText = "Enter the 4-digit OTP sent to your email.";
+            otpMessage.innerText = "";
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('otp-container').classList.remove('hidden');
         }
@@ -209,6 +534,51 @@
             document.getElementById('otp-container').classList.add('hidden');
             document.getElementById('auth-container').classList.remove('hidden');
             switchTab('login');
+        }
+
+        function appendMessage(text, type) {
+            const chatBox = document.getElementById('chat-box');
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) emptyState.remove();
+
+            const div = document.createElement('div');
+            div.className = `chat-msg ${type}`;
+            div.textContent = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div;
+        }
+
+        function updateFileName() {
+            const fileInput = document.getElementById('upload-file');
+            const display = document.getElementById('file-name-display');
+            if (fileInput.files && fileInput.files[0]) {
+                display.textContent = fileInput.files[0].name;
+                display.style.color = "var(--text-primary)";
+            } else {
+                display.textContent = "No file selected (.txt, .pdf)";
+                display.style.color = "var(--text-muted)";
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${API_URL}/history`, {
+                    credentials: 'include'
+                });
+                if (!res.ok) return;
+
+                const data = await res.json();
+                const history = data.history || [];
+                const chatBox = document.getElementById('chat-box');
+
+                if (history.length > 0) {
+                    chatBox.innerHTML = "";
+                    history.forEach(item => appendMessage(item.content, item.role));
+                }
+            } catch (err) {
+                console.error("Failed to load history:", err);
+            }
         }
 
         async function handleSignup() {
@@ -226,7 +596,6 @@
                 const data = await res.json();
                 if (data.signin === "success") {
                     showVerificationScreen(username);
-
                 } else {
                     msg.className = "";
                     msg.innerText = data.error || data.detail || "Signup failed.";
@@ -244,7 +613,7 @@
 
             if (!username) {
                 msg.className = "";
-                msg.innerText = "The account username is missing. Return and start verification again.";
+                msg.innerText = "Account username is missing. Go back and try again.";
                 return;
             }
             if (!/^\d{4}$/.test(otp)) {
@@ -265,7 +634,7 @@
                     document.getElementById('login-username').value = username;
                     document.getElementById('signup-otp').value = "";
                     pendingVerificationUsername = "";
-                    showChat();
+                    showChat(username);
                 } else {
                     msg.className = "";
                     msg.innerText = data.otp_status || data.error || "OTP verification failed.";
@@ -290,7 +659,7 @@
                 });
                 const data = await res.json();
                 if (data.login === "success") {
-                    showChat();
+                    showChat(username);
                 } else if (data.error === "Please verify your account first.") {
                     showVerificationScreen(username);
                 } else {
@@ -303,10 +672,14 @@
             }
         }
 
-        function showChat() {
+        function showChat(username = "") {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('otp-container').classList.add('hidden');
             document.getElementById('chat-container').classList.remove('hidden');
+            if (username) {
+                document.getElementById('active-user-badge').textContent = `@${username}`;
+            }
+            loadHistory();
         }
 
         async function restoreSession() {
@@ -315,26 +688,26 @@
                     credentials: 'include'
                 });
                 if (res.ok) {
-                    showChat();
+                    const data = await res.json().catch(() => ({}));
+                    showChat(data.username || "");
                 } else if (res.status !== 401) {
                     throw new Error(`Session check failed (${res.status}).`);
                 }
             } catch (err) {
                 document.getElementById('message').innerText =
-                    "Could not verify your session. Check the server connection and try again.";
+                    "Could not verify your session. Check the server connection.";
             }
         }
 
         async function handleChat() {
             const inputField = document.getElementById('chat-input');
             const message = inputField.value;
-            const chatBox = document.getElementById('chat-box');
 
             if (!message.trim()) return;
 
-            chatBox.innerHTML += `<div class="chat-msg user"><b>You:</b> ${message}</div>`;
+            appendMessage(message, 'user');
             inputField.value = "";
-            chatBox.scrollTop = chatBox.scrollHeight;
+            const typingBubble = appendMessage('Thinking...', 'ai typing');
 
             try {
                 const res = await fetch(`${API_URL}/chat`, {
@@ -344,14 +717,54 @@
                     body: JSON.stringify({ message })
                 });
                 const data = await res.json();
+                typingBubble.remove();
+
                 if (res.ok) {
-                    chatBox.innerHTML += `<div class="chat-msg ai"><b>AI:</b> ${data.AIMessage}</div>`;
+                    appendMessage(data.AIMessage, 'ai');
                 } else {
-                    chatBox.innerHTML += `<div class="chat-msg" style="color:#ff5252"><b>Error:</b> Unauthorized or session expired.</div>`;
+                    appendMessage('Unauthorized or session expired.', 'error');
                 }
-                chatBox.scrollTop = chatBox.scrollHeight;
             } catch (err) {
-                chatBox.innerHTML += `<div class="chat-msg" style="color:#ff5252"><b>Error:</b> Failed to reach server.</div>`;
+                typingBubble.remove();
+                appendMessage('Failed to reach server.', 'error');
+            }
+        }
+
+        async function handleUpload() {
+            const fileInput = document.getElementById('upload-file');
+            const msg = document.getElementById('upload-message');
+            const file = fileInput.files && fileInput.files[0];
+
+            if (!file) {
+                msg.className = "";
+                msg.innerText = "Select a .txt or .pdf file first.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            msg.className = "";
+            msg.innerText = "Uploading & indexing...";
+
+            try {
+                const res = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    msg.className = "success";
+                    msg.innerText = data.message || `${file.name} uploaded.`;
+                    fileInput.value = "";
+                    updateFileName();
+                } else {
+                    msg.className = "";
+                    msg.innerText = data.detail || data.message || "Upload failed.";
+                }
+            } catch (err) {
+                msg.className = "";
+                msg.innerText = "Server error or connection failed.";
             }
         }
 
@@ -366,11 +779,12 @@
                 }
                 document.getElementById('chat-container').classList.add('hidden');
                 document.getElementById('auth-container').classList.remove('hidden');
-                document.getElementById('chat-box').innerHTML = "";
+                document.getElementById('chat-box').innerHTML =
+                    `<div class="empty-state" id="empty-state">Upload a <b>.txt</b> or <b>.pdf</b> document below, then ask questions grounded in your files.</div>`;
                 document.getElementById('message').innerText = "";
+                document.getElementById('upload-message').innerText = "";
             } catch (err) {
-                document.getElementById('chat-box').innerText =
-                    "Could not log out. Check the server connection and try again.";
+                appendMessage('Could not log out. Check server connection.', 'error');
             }
         }
 

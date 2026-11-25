@@ -1,37 +1,44 @@
-from pathlib import Path
-from sentence_transformers import SentenceTransformer, util
+import chromadb
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+client = chromadb.PersistentClient(path='/tmp/chroma_db')
+collection = client.get_or_create_collection(name='user_docs')
 
 
-KNOWLEDGE_BASE = Path('src/chatbot/llm/notes.txt')
-    
-def load_chunks(filepath:str | Path = KNOWLEDGE_BASE, chunk_size:int = 50, overlap: int = 10) -> list[str]:
-
-    knowledge_base = Path(filepath).read_text(encoding='utf-8')
-    words = knowledge_base.split()
-
-    CONTEXT = list()
-
+def chunk_text(text: str, chunk_size: int = 50, overlap: int = 10) -> list[str]:
+    words = text.split()
+    CONTEXT = []
     for word in range(0, len(words), chunk_size - overlap):
-        CONTEXT.append(" ".join(words[word:word+chunk_size]))
-
+        CONTEXT.append(" ".join(words[word:word + chunk_size]))
     return CONTEXT
 
-KNOWLEDGE_BASE = load_chunks(KNOWLEDGE_BASE)
-CHUNK_EMBEDDINGS = model.encode(KNOWLEDGE_BASE, convert_to_tensor=True)
 
-def retrieve_context(query: str, k:int = 2) -> str:
+def ingest_text(text: str, user_id: str, filename: str):
+    chunks = chunk_text(text)
+    if not chunks:
+        return
 
-    query_embeddings = model.encode(query, convert_to_tensor=True)
-    scores = util.cos_sim(query_embeddings, CHUNK_EMBEDDINGS)[0]
-    results = scores.topk(k=min(k, len(KNOWLEDGE_BASE)))
+    clean_user = str(user_id).strip()
+    metadatas = [{"user_id": clean_user, "source": filename} for _ in chunks]
+    ids = [f"{clean_user}_{filename}_chunk_{i}" for i in range(len(chunks))]
+    collection.upsert(documents=chunks, metadatas=metadatas, ids=ids)
+    print(f"[INGEST] user={clean_user!r} | chunks={len(chunks)} | total_in_db={collection.count()}")
 
-    CONTEXT = list()
-    # CHUNKS = query.lower().split()
 
-    for k in results.indices:
-        CONTEXT.append(KNOWLEDGE_BASE[k])
+def retrieve_context(query: str, user_id: str, k: int = 4) -> str:
+    clean_user = str(user_id).strip()
+    print(f"[RETRIEVE] user={clean_user!r} | total_in_db={collection.count()}")
+
+    results = collection.query(query_texts=[query], n_results=k, where={"user_id": clean_user})
+
+    if not results["documents"] or not results["documents"][0]:
+        print(f"[RETRIEVE] user={clean_user!r} | 0 docs found in collection!")
+        return "No context available"
+
+    docs = results["documents"][0]
+    distances = results["distances"][0]
+    print(f"[RETRIEVE] distances={distances}")
+
+    CONTEXT = [doc for doc, dist in zip(docs, distances) if dist < 1.7]
     if CONTEXT:
         return "\n---\n".join(CONTEXT)
 

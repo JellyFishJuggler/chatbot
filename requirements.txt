@@ -8,3 +8,6 @@ langgraph
 pyjwt
 pwdlib[argon2]
 sqlalchemy
+chromadb
+sentence-transformers
+langgraph-checkpoint-sqlite

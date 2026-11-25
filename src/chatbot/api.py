@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Response, Request
+from fastapi import FastAPI, Depends, HTTPException, Response, Request, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from pwdlib import PasswordHash
@@ -7,7 +7,7 @@ from chatbot.database import sessionMaker, engine
 import chatbot.model
 from sqlalchemy.orm import Session
 from chatbot.model import User  
-from chatbot.llm_model import _responseChatBot
+from chatbot.llm_model import _responseChatBot, getHistory
 
 import jwt
 from datetime import datetime, timezone, timedelta
@@ -22,6 +22,10 @@ import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+from io import BytesIO
+from pypdf import PdfReader
+from src.chatbot.llm.rag import ingest_text
 
 load_dotenv()
 app = FastAPI()
@@ -265,10 +269,33 @@ def verify_otp(credentials: VerifyOTP, response: Response, database: Session = D
 def chat(credentials: Chat, currentUser: str = Depends(get_current_user)):
 
     userInput = credentials.message
-    response = _responseChatBot(_humanMessage=userInput)
+    response = _responseChatBot(_humanMessage=userInput, thread_id=currentUser)
 
     return {
         "username" : currentUser,
         "HumanMessage" : userInput,
         "AIMessage" : response
     }
+
+
+@app.post('/upload')
+async def upload(file:UploadFile = File(...), currentUser: str = Depends(get_current_user)):
+
+    raw_bytes = await file.read()
+    if file.filename.lower().endswith('.txt'):
+        text = raw_bytes.decode('utf-8')
+    elif file.filename.lower().endswith('.pdf'):
+        reader = PdfReader(BytesIO(raw_bytes))
+        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    else:
+        raise HTTPException(status_code=404, detail="This file format is not supported.")
+
+    ingest_text(text,currentUser,file.filename)
+    return {
+        "message" : f"{file.filename} uploaded successfully."
+    }
+
+
+@app.get('/history')
+def _getHistory(thread_id:str = Depends(get_current_user)) -> dict:
+    return {"history":getHistory(thread_id=thread_id)}
