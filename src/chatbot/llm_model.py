@@ -17,13 +17,17 @@ from typing_extensions import TypedDict, Annotated
 import os
 
 from src.chatbot.llm.rag import retrieve_context
+from src.chatbot.llm.tools import search_career_documents, log_job_application, get_job_application, generate_interview_questions, analyze_jd_match
 
 load_dotenv()
 
 os.environ['GEMINI_API_KEY'] = os.getenv('GEMINI_API_KEY')
 
-llm = ChatOllama(model='dolphin-phi:2.7b', temperature=0.7)
+tools = [search_career_documents, log_job_application, get_job_application, generate_interview_questions, analyze_jd_match]
+
+llm = ChatOllama(model="qwen2.5:3b", temperature=0.2)
 # llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash')
+llm = llm.bind_tools(tools)
 connection = sqlite3.connect('/tmp/chat_memory.db', check_same_thread=False)
 model = create_agent(llm)
 memory = SqliteSaver(connection)
@@ -50,29 +54,25 @@ def getHistory(thread_id:str) -> list[str]:
     return chatHistory
 
 def chatResponse(state: State, config: RunnableConfig) -> dict:
+    SYSTEM = """You are a career and interview preparation assistant.
 
-    user_id = config['configurable']['thread_id']
-    latest_query = state['messages'][-1].content
-    context = retrieve_context(latest_query, user_id=user_id)
-    SYSTEM = f"""You are a helpful, direct assistant. Answer the user's questions using the provided context below.
+Rules:
+- Use your tools whenever the user asks about their resume, skills, projects, JD match, interview practice, or tracking/listing job applications.
+- Never claim you saved, updated, or retrieved an application or resume detail without calling the appropriate tool first.
+- Rely ONLY on facts returned by your tools or stated in the conversation. Do not guess or fabricate details.
+- For casual greetings (like "hi", "hello"), respond naturally without calling tools."""
 
-        Rules:
-        - Rely ONLY on the facts inside <context>. Do not guess, assume, or introduce outside information.
-        - If the context says "No context available" or does not contain the answer, clearly say you don't have enough information to answer.
-        - Keep your responses concise, clear, and conversational.
-        - If the user sends a casual greeting (like "hi", "hello", "wassup), respond naturally and ask how you can help with the documents.
-        - Do not force document-related responses when the user is simply engaging in casual conversation.
-        
-        <context>
-        {context}
-        </context>"""
-    result = model.invoke({"messages":[SystemMessage(content=SYSTEM)] + state['messages']})
-    return {"messages":[result['messages'][-1]]}
+    result = llm.invoke([SystemMessage(content=SYSTEM)] + state["messages"])
+    return {"messages": [result]}   
 
 graph_builder = StateGraph(State)
 graph_builder.add_node("llmchatbot", chatResponse)
+tools_node = ToolNode(tools=tools)
+graph_builder.add_node("tools",tools_node)
+graph_builder.add_conditional_edges("llmchatbot", tools_condition)
+graph_builder.add_edge("tools","llmchatbot")
 graph_builder.add_edge(START, "llmchatbot")
-graph_builder.add_edge("llmchatbot", END)
+# graph_builder.add_edge("llmchatbot", END)
 
 graph = graph_builder.compile(checkpointer=memory)
 

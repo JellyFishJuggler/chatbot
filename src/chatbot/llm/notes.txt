@@ -1,5 +1,0 @@
-AQUIS is a machine learning platform built to forecast groundwater levels across 600 monitoring stations in Uttar Pradesh. Instead of predicting a single flat number, the system uses pooled XGBoost quantile models to generate upper and lower confidence intervals. This allows water resource planners to see both best-case and worst-case seasonal fluctuations before drought conditions hit.
-
-Sarika is a bilingual voice assistant designed specifically for e-commerce sellers who prefer speaking in Hindi or English. Under the hood, it routes audio queries through FastAPI and uses LangGraph to manage multi-step conversational state. When a seller asks about pending orders or inventory counts, the assistant fetches live store data and replies naturally without requiring complex dashboard navigation.
-
-RepoReader is a developer tool that lets engineers ask plain-English questions about unfamiliar GitHub repositories. First, it splits source code files into smaller logical blocks and converts them into vector embeddings. During a query, it retrieves candidate snippets and runs a cross-encoder reranker so only the most relevant functions reach the final language model.
